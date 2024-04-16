@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,15 +50,32 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  static const _channel = MethodChannel('irhp/channel');
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  void _incrementCounter() async {
+    try {
+      final result = await _channel.invokeMethod('openCamera', {
+        "steps": steps.map((e) => e.toJson()).toList(),
+        "detections": detections,
+      });
+    } catch (e) {
+      print('%% ${e}');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _channel.setMethodCallHandler((call) async {
+      if(call.method == 'getListBase64') {
+        // print('%% ${call.arguments.runtimeType}');
+        final listBase64 = call.arguments as List<Object>;
+
+        print('%%length: ${listBase64.length}');
+
+        if(listBase64.isNotEmpty == true) {
+        }
+      }
     });
   }
 
@@ -113,3 +131,46 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+class Step {
+  final String id;
+  final String description;
+  const Step(this.id, this.description);
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'description': description,
+    };
+  }
+}
+
+const steps = [
+  Step('smile', 'Cười'),
+  Step('turnLeft', 'Quay trái'),
+  Step('closeLeftEye', 'Nhắm mắt trái'),
+  Step('closeRightEye', 'Nhắm mắt phải'),
+  Step('turnRight', 'Quay mặt sang phải')
+];
+
+const  detections = {
+  'smiling': {
+    'smilingProbability': 0.3,
+  },
+  'turnLeft': {
+    'headEulerAngleY': 30.0,
+  },
+  'turnRight': {
+    'headEulerAngleY': -40,
+  },
+  'closeLeftEye': {
+    'closeProbability': 0.1,
+    'openProbability': 0.3,
+  },
+  'faceInCamera': {
+    'height': [150, 400.5],
+    'width': [150, 400],
+    'top': [100, 290],
+    'left': [10, 220],
+  }
+};

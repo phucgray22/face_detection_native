@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#2196F3"
+    tools:context=".faceDetector.DemoActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ffffff">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp">
+
+                <com.example.face_detection_native.faceDetector.GraphicOverlay
+                    android:id="@+id/graphicOverlay"
+                    android:layout_width="320dp"
+                    android:layout_height="320dp"
+                    android:layout_gravity="center"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.camera.view.PreviewView
+                    android:id="@+id/previewView"
+                    android:layout_width="320dp"
+                    android:layout_height="320dp"
+                    android:layout_gravity="center"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:scaleType="fillCenter">
+
+                </androidx.camera.view.PreviewView>
+
+                <ImageView
+                    android:id="@+id/circularOverlay"
+                    android:layout_width="320dp"
+                    android:layout_height="320dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/circular_overlay" />
+
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/stepText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:textColor="#000000"
+                android:text="Di chuyển mặt vào gần camera" />
+
+            <HorizontalScrollView
+                android:id="@+id/hScrollView"
+                android:layout_width="match_parent"
+                android:layout_height="144dp"
+                android:layout_marginTop="20dp"
+                android:contentDescription="listImages"
+                android:fadeScrollbars="true">
+
+                <LinearLayout
+                    android:id="@+id/listImagesContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <!-- Images auto generate -->
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <Button
+                android:id="@+id/checkInButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:background="#2196F3"
+                android:onClick="onClick"
+                android:text="Check-in"
+                android:textColor="#FFFFFF" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
