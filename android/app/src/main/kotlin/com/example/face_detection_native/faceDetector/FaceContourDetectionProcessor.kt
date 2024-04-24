@@ -1,8 +1,10 @@
 package com.example.face_detection_native.faceDetector
 
+import android.graphics.Bitmap
 import android.graphics.Rect
 import android.media.Image
 import android.util.Log
+import androidx.camera.core.ImageProxy
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
@@ -12,11 +14,8 @@ import java.io.IOException
 import java.nio.ByteBuffer
 
 class FaceContourDetectionProcessor(
-    private val _graphicOverlay: GraphicOverlay,
-    private val _onDetected: (List<Face>) -> Unit,
+    private val _onDetected: (List<Face>, ImageProxy) -> Unit,
 ) : BaseImageAnalyzer<List<Face>>() {
-
-
     private val realTimeOpts = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
         .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
@@ -25,9 +24,6 @@ class FaceContourDetectionProcessor(
         .build()
 
     private val detector = FaceDetection.getClient(realTimeOpts)
-
-    override val graphicOverlay: GraphicOverlay
-        get() = _graphicOverlay
 
     override fun detectInImage(image: InputImage): Task<List<Face>> {
         return detector.process(image)
@@ -41,23 +37,14 @@ class FaceContourDetectionProcessor(
         }
     }
 
+
     override fun onSuccess(
         results: List<Face>,
-        graphicOverlay: GraphicOverlay,
-        rect: Rect
+        rect: Rect,
+        imageProxy: ImageProxy
     ) {
 
-        _onDetected(results)
-//        graphicOverlay.clear()
-
-//        Log.d("debug123", results.count().toString())
-
-//        if (results.count() == 1) {
-//            _onDetected(results.first())
-//        }
-
-
-//        graphicOverlay.postInvalidate()
+        _onDetected(results, imageProxy)
     }
 
     override fun onFailure(e: Exception) {

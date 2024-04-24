@@ -1,5 +1,6 @@
 package com.example.face_detection_native.faceDetector
 
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -7,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.HorizontalScrollView
@@ -16,19 +18,19 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageProxy
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.example.face_detection_native.KotlinContextSingleton
+import com.example.face_detection_native.R
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import com.example.face_detection_native.R
 import kotlinx.android.synthetic.main.activity_demo.checkInButton
 import kotlinx.android.synthetic.main.activity_demo.circularOverlay
-import kotlinx.android.synthetic.main.activity_demo.graphicOverlay
 import kotlinx.android.synthetic.main.activity_demo.listImagesContainer
 import kotlinx.android.synthetic.main.activity_demo.previewView
 import kotlinx.android.synthetic.main.activity_demo.stepText
@@ -42,12 +44,15 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private var smilingProbability: Double = 0.7
     private var turnLeftHeadEulerAngleY: Double = 30.0
     private var turnRightHeadEulerAngleY: Double = -40.0
+    private var lookUpHeadEulerAngleX: Double = 30.0;
+    private var lookDownHeadEulerAngleX: Double = -15.0;
     private var closeEyeProbability: Double = 0.05
     private var openEyeProbability: Double = 0.05
     private var faceHeightRange: ArrayList<Int> = arrayListOf(150, 400)
     private var faceWidthRange: ArrayList<Int> = arrayListOf(150, 400)
     private var faceTopRange: ArrayList<Int> = arrayListOf(100, 290)
     private var faceLeftRange: ArrayList<Int> = arrayListOf(10, 220)
+
 
     private var currentStepIndex: Int = -1
     private var currentStep: StepData? = null
@@ -92,10 +97,6 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         val circleSize = minOf(displayMetrics.widthPixels * 0.95, MAX_CAMERA_SIZE).toInt()
 
-        val graphicOverlayParams = graphicOverlay.layoutParams
-        graphicOverlayParams.width = circleSize
-        graphicOverlayParams.height = circleSize
-        graphicOverlay.layoutParams = graphicOverlayParams
 
         // Update layout params for previewView
         val previewViewParams = previewView.layoutParams
@@ -118,7 +119,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         } else {
             checkInButton.setBackgroundColor(Color.GRAY)
             checkInButton.isEnabled = false
-            
+
             if(finished) {
                 stepText.text = "CHƯA HOÀN THÀNH"
             }
@@ -177,32 +178,32 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private fun loadDetectionOptions() {
         var detections = options.detections
 
-        if(detections.containsKey("smiling")) {
-            val obj = detections["smiling"] as HashMap<String, Object>
+        if(detections.containsKey("smilingProbability")) {
+            smilingProbability = detections["smilingProbability"].toString()?.toDouble()
+        }
 
-            if(obj.containsKey("smilingProbability")) {
-                smilingProbability = obj["smilingProbability"].toString()?.toDouble()
+        if(detections.containsKey("turnHead")) {
+            val obj = detections["turnHead"] as HashMap<String, Object>
+
+            if(obj.containsKey("left")) {
+                turnLeftHeadEulerAngleY = obj["left"].toString()?.toDouble()
+            }
+
+            if(obj.containsKey("right")) {
+                turnRightHeadEulerAngleY = obj["right"].toString()?.toDouble()
+            }
+
+            if(obj.containsKey("up")) {
+                lookUpHeadEulerAngleX = obj["up"].toString()?.toDouble()
+            }
+
+            if(obj.containsKey("down")) {
+                lookDownHeadEulerAngleX = obj["down"].toString()?.toDouble()
             }
         }
 
-        if(detections.containsKey("turnLeft")) {
-            val obj = detections["turnLeft"] as HashMap<String, Object>
-
-            if(obj.containsKey("headEulerAngleY")) {
-                turnLeftHeadEulerAngleY = obj["headEulerAngleY"].toString()?.toDouble()
-            }
-        }
-
-        if(detections.containsKey("turnRight")) {
-            val obj = detections["turnRight"] as HashMap<String, Object>
-
-            if(obj.containsKey("headEulerAngleY")) {
-                turnRightHeadEulerAngleY = obj["headEulerAngleY"].toString()?.toDouble()
-            }
-        }
-
-        if(detections.containsKey("closeLeftEye")) {
-            val obj = detections["closeLeftEye"] as HashMap<String, Object>
+        if(detections.containsKey("closeOpenEye")) {
+            val obj = detections["closeOpenEye"] as HashMap<String, Object>
 
             if(obj.containsKey("closeProbability")) {
                 closeEyeProbability = obj["closeProbability"].toString()?.toDouble()
@@ -304,27 +305,8 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         loading = true
         currentStepIndex += 1
 
-//        changeCircleColor(Color.GREEN)
-
-
-
-        //
-//        val buffer = image.planes[0].buffer
-//        val imageData = ByteArray(buffer.remaining())
-//        buffer.get(imageData)
-//
-//        val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-//
-//        val imageView = getImage(currentStepIndex - 1)
-//
-//        imageView?.setImageBitmap(previewView.bitmap)
-//
-//        imageView?.isVisible = true
-
-
-
         takePhoto(
-            currentStepIndex,
+            currentIndex = currentStepIndex,
             callback = {
             loading = false
 
@@ -339,7 +321,8 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         })
     }
 
-    private fun onDetected(faces: List<Face>) {
+    private fun onDetected(faces: List<Face>, imageProxy: ImageProxy) {
+
         if(faces.isEmpty() || currentStepIndex >= options.steps.count()) {
             changeCircleColor(Color.TRANSPARENT)
             return;
@@ -353,6 +336,9 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
         val face = faces.first()
         val bouncingBox = face.boundingBox
+
+        Log.d("debug123", "${bouncingBox.height()} - ${bouncingBox.width()}")
+//        Log.d("debug123", face.headEulerAngleX.toString())
 
         if(
             bouncingBox.height() in faceHeightRange[0]..faceHeightRange[1] &&
@@ -382,7 +368,9 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
                 }
 
-                if((currentStepIndex >= 0 && currentStepIndex < options.steps.count()) && isFaceMatchCondition(options.steps[currentStepIndex]?.id, face)) {
+
+
+                if((currentStepIndex >= 0 && currentStepIndex < options.steps.count()) && isFaceMatchCondition(options.steps[currentStepIndex]?.id, face, imageProxy)) {
                     handleStepSuccess()
                 } else {
 //                    currentStepIndex--
@@ -397,16 +385,26 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun isFaceMatchCondition(stepID: String, face: Face?): Boolean {
+
+
+    private fun isFaceMatchCondition(stepID: String, face: Face?, imageProxy: ImageProxy): Boolean {
         if(face == null) return false
 
-        return when(stepID) {
+        val isMatched = when(stepID) {
             "turnLeft" -> {
                 face.headEulerAngleY >= turnLeftHeadEulerAngleY
             }
 
             "turnRight" -> {
                 face.headEulerAngleY <= turnRightHeadEulerAngleY
+            }
+
+            "lookUp" -> {
+                face.headEulerAngleX >= lookUpHeadEulerAngleX
+            }
+
+            "lookDown" -> {
+                face.headEulerAngleX >= lookDownHeadEulerAngleX
             }
 
             "smile" -> {
@@ -435,6 +433,14 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
                 false
             }
         }
+
+        if(isMatched) {
+
+        }
+
+        return isMatched
+
+//        return false
     }
 
     private var _imageCapture: ImageCapture? = null
@@ -443,8 +449,10 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         _imageCapture = imageCapture;
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private fun takePhoto(currentIndex: Int, callback: () -> Unit) {
-        val currentBitmap = previewView.bitmap
+        var currentBitmap = previewView.bitmap
+//        var currentBitmap = previewView.getDrawingCache(true).copy(Bitmap.Config.ALPHA_8, false)
 
         val imageView = getImage(currentIndex - 1)
 
@@ -461,36 +469,42 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         //
         var currentStep = options?.steps?.elementAt(currentIndex - 1)
 
-        var imageText = getImageText(currentStepIndex - 1)
+
+        var imageText = getImageText(currentIndex - 1)
 
         imageText?.visibility = View.VISIBLE
-        //
+        imageText?.setTextColor(Color.BLUE)
 
-        getImageText(currentIndex - 1)?.setTextColor(Color.BLUE)
         listImages = listImages.plus(currentBitmap!!)
 
         if(!listStepIdSuccess.contains(currentStep?.id)) {
             listStepIdSuccess.add(currentStep?.id  )
         }
 
-//        Log.d("debug123", "${listStepIdSuccess?.count()} - ${options?.steps?.count()}")
-
-//        if(listStepIdSuccess?.count() == options?.steps?.count() && finished) {
-//            Log.d("debug123", "CHAY VO DAY")
+//        InputImage.fromBitmap(currentBitmap, frame?.imageInfo?.rotationDegrees!!)
+//        InputImage.fromMediaImage(frame.image!!, frame?.imageInfo?.rotationDegrees!!)
+//        val byteBuffer = frame.image!!.planes[0].buffer
 //
-//        }
+//        val byteArray = ByteArray(byteBuffer.remaining())
+
+//        frame.image.
+//      ctory.decodeByteArray(byteArray, 0, byteArray.size)
+
+        // Step 2: Create Image from Bitmap
+//        val image = ImageDecoder.createSource(bitmap).decodeBitmap()
+//        byteBuffer.get(byteArray)
+//        val bitmap = BitmapFa
+//        val image123 = InputImage.fromByteArray(byteArray, frame.image?.width!!, frame.image?.height!!, frame?.imageInfo?.rotationDegrees!!, InputImage.IMAGE_FORMAT_NV21)
 
 
-//        countFace(InputImage.fromBitmap(currentBitmap!!, previewView.rotation.toInt())) { faceCount, face ->
+
+//        countFace(InputImage.fromMediaImage(frame.image!!,frame?.imageInfo?.rotationDegrees!! )) { faceCount, face ->
 //            var currentStep = options?.steps?.elementAt(currentIndex - 1)
-//
-//            var imageText = getImageText(currentStepIndex - 1)
 //
 //            imageText?.visibility = View.VISIBLE
 //
 //            if(faceCount == 1 && isFaceMatchCondition(currentStep.id, face)) {
 //                getImageText(currentIndex - 1)?.setTextColor(Color.BLUE)
-//                listImages = listImages.plus(bitmap)
 //
 //                if(!listStepIdSuccess.contains(currentStep?.id)) {
 //                    listStepIdSuccess.add(currentStep?.id  )
@@ -513,13 +527,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 //                    Snackbar.LENGTH_SHORT
 //                )
 //
-//                getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-//
-////                        if(finished) {
-////                            getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-////                        } else {
-////                            getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-////                        }
+//                imageText?.setTextColor(Color.RED)
 //
 //                snackBar.view.setBackgroundColor(Color.rgb(255,102,102))
 //                snackBar.setTextColor(Color.rgb(102,0,0))
@@ -637,9 +645,10 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             context = this,
             finderView =  previewView,
             lifecycleOwner = this,
-            graphicOverlay =  graphicOverlay,
+//            graphicOverlay =  graphicOverlay,
             onDetected = ::onDetected,
-            setImageCapture = ::setImageCapture
+            setImageCapture = ::setImageCapture,
+//            getFrame = ::getFrame
         )
 
 //        cameraManager.preview.setPreviewCallback(imageView)
@@ -660,30 +669,31 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             )
     }
 
+    private val detector = FaceDetection.getClient(FaceDetectorOptions.Builder()
+        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+        .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+        .build())
+
     private fun countFace(image: InputImage, callback: (Int, Face?) -> Unit) {
-        val realTimeOpts = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .build()
-
-        val detector = FaceDetection.getClient(realTimeOpts)
-
         detector.process(image)
             .addOnSuccessListener { faces ->
+                Log.d("debug123", "success: ${faces.count()}")
+
                 if(faces?.isEmpty() == false && faces?.count() == 1) {
                     callback(faces.count(), faces[0])
                 } else {
                     callback(0, null)
                 }
 
-                detector.close()
+//                detector.close()
 
             }
             .addOnFailureListener { e ->
-//                Log.d("debug123", e.message)
+                Log.d("debug123", e.message!!)
                 callback(0, null)
-                detector.close()
+//                detector.close()
 
             }
 
@@ -694,6 +704,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         when(v?.id) {
             R.id.checkInButton -> {
                 KotlinContextSingleton.sendDataToCrossPlatform(listImages)
+                detector?.close()
                 onBackPressed()
             }
             else -> {
