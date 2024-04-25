@@ -41,10 +41,13 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Object> list2 = [];
 
   String currentEmpId = '';
+  String score = '';
+  String predictedLabel = '';
 
   static const _channel = MethodChannel('irhp/channel');
   final urlTrain = 'https://w3vd768m-5177.asse.devtunnels.ms/TrainImage2';
   final urlVerify = 'https://w3vd768m-5177.asse.devtunnels.ms/VerifyImage';
+  
 
   String getID() {
     var uuid = const Uuid();
@@ -65,6 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void train() async {
     setState(() {
       isTrain = true;
+      currentEmpId = getID();
     });
     try {
       await _channel.invokeMethod('openCamera', {
@@ -146,8 +150,22 @@ class _MyHomePageState extends State<MyHomePage> {
             }),
           );
 
-          print('%% ${res.statusCode}');
-          print('%% ${res.body}');
+          // print('%% ${res.statusCode}');
+          // print('%% ${res.body}');
+          // print('%% ${res.body}');
+          // print('%% ${res.body.runtimeType}');
+          // print('%% ${res.bodyBytes}');
+
+          final map = jsonDecode(res.body);
+
+         setState(() {
+            score = "${(map["Score"] * 100).toString().substring(0, 4)}%";
+            predictedLabel = map["PredictedLabel"];
+         });
+
+          // print('%% ${map["Score"]}');
+          // print('%% ${map["PredictedLabel"]}');
+
         }
       }
     });
@@ -156,60 +174,66 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Column(
-                  children: [
-                    Text(
-                      'Current EmpID:\n $currentEmpId',
-                      textAlign: TextAlign.center,
-                    ),
-                    // Text('Count train: ${list1.length}'),
-                    // Text('Count predict: ${list2.length}')
-                  ],
-                ),
-                const SizedBox(height: 20),
-                ..._buildInputs(),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: train,
-                      child: const Text('TRAIN'),
-                    ),
-                    const SizedBox(width: 30),
-                    ElevatedButton(
-                      onPressed: predict,
-                      child: const Text('Predict'),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(width: 30),
-                    ElevatedButton(
-                      onPressed: resetAll,
-                      child: const Text('Resel all'),
-                    ),
-                    const SizedBox(width: 30),
-                    ElevatedButton(
-                      onPressed: newID,
-                      child: const Text('Create new ID'),
-                    ),
-                  ],
-                ),
-              ],
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Column(
+                    children: [
+                      Text(
+                        'Current EmpID:\n $currentEmpId',
+                        textAlign: TextAlign.center,
+                      ),
+                      Text('Score: $score',  textAlign: TextAlign.center),
+                      Text('PredictedLabel: $predictedLabel',  textAlign: TextAlign.center),
+                      // Text('Count train: ${list1.length}'),
+                      // Text('Count predict: ${list2.length}')
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ..._buildInputs(),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: train,
+                        child: const Text('TRAIN'),
+                      ),
+                      const SizedBox(width: 30),
+                      ElevatedButton(
+                        onPressed: predict,
+                        child: const Text('PREDICT'),
+                      ),
+                      const SizedBox(width: 30),
+                      ElevatedButton(
+                        onPressed: resetAll,
+                        child: const Text('RESET'),
+                      ),
+                    ],
+                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const SizedBox(width: 30),
+                  //     ElevatedButton(
+                  //       onPressed: resetAll,
+                  //       child: const Text('Resel all'),
+                  //     ),
+                  //     // const SizedBox(width: 30),
+                  //     // ElevatedButton(
+                  //     //   onPressed: newID,
+                  //     //   child: const Text('Create new ID'),
+                  //     // ),
+                  //   ],
+                  // ),
+                ],
+              ),
             ),
           ),
         ),
@@ -232,6 +256,8 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController toLeftController = TextEditingController();
   TextEditingController fromStraightController = TextEditingController();
   TextEditingController toStraightController = TextEditingController();
+  TextEditingController fromMidController = TextEditingController();
+  TextEditingController toMidController = TextEditingController();
 
   double getValue(String strValue) {
     if (strValue == null || strValue == '') {
@@ -254,6 +280,10 @@ class _MyHomePageState extends State<MyHomePage> {
         getValue(fromStraightController.text),
         getValue(toStraightController.text),
       ],
+      'mid': [
+        getValue(fromMidController.text),
+        getValue(toMidController.text),
+      ],
       'faceSize': [
         getValue(fromSizeController.text),
         getValue(toSizeController.text)
@@ -275,26 +305,31 @@ class _MyHomePageState extends State<MyHomePage> {
     final openEye = StorageUtils.instance.getDouble(key: 'openEye') ?? 0.9;
     final turnLeft = StorageUtils.instance.getDouble(key: 'turnLeft') ?? -20;
     final turnRight = StorageUtils.instance.getDouble(key: 'turnRight') ?? 40;
-    final lookUp = StorageUtils.instance.getDouble(key: 'lookUp') ?? 30;
-    final lookDown = StorageUtils.instance.getDouble(key: 'lookDown') ?? -15;
-    final fromSize = StorageUtils.instance.getDouble(key: 'fromSize') ?? 180;
-    final toSize = StorageUtils.instance.getDouble(key: 'toSize') ?? 250;
+    // final lookUp = StorageUtils.instance.getDouble(key: 'lookUp') ?? 30;
+    // final lookDown = StorageUtils.instance.getDouble(key: 'lookDown') ?? -15;
+    final fromSize = StorageUtils.instance.getDouble(key: 'fromSize') ?? 250;
+    final toSize = StorageUtils.instance.getDouble(key: 'toSize') ?? 290;
 
-    final fromTop = StorageUtils.instance.getDouble(key: 'fromTop') ?? 80;
+    final fromTop = StorageUtils.instance.getDouble(key: 'fromTop') ?? 0;
     final toTop = StorageUtils.instance.getDouble(key: 'toTop') ?? 150;
-    final fromLeft = StorageUtils.instance.getDouble(key: 'fromLeft') ?? 0;
-    final toLeft = StorageUtils.instance.getDouble(key: 'toLeft') ?? 135;
+    final fromLeft = StorageUtils.instance.getDouble(key: 'fromLeft') ?? 10;
+    final toLeft = StorageUtils.instance.getDouble(key: 'toLeft') ?? 80;
 
-    final fromStraight = StorageUtils.instance.getDouble(key: 'fromStraight') ?? 220;
-    final toStraight = StorageUtils.instance.getDouble(key: 'toStraight') ?? 280;
+    final fromStraight = StorageUtils.instance.getDouble(key: 'fromStraight') ?? 210;
+    final toStraight = StorageUtils.instance.getDouble(key: 'toStraight') ?? 290;
+
+    final fromMid =
+        StorageUtils.instance.getDouble(key: 'fromMid') ?? -12;
+    final toMid =
+        StorageUtils.instance.getDouble(key: 'toMid') ?? 12;
 
     smillingController.text = '$smilling';
     closeEyeController.text = '$closeEye';
     openEyeController.text = '$openEye';
     turnLeftController.text = '$turnLeft';
     turnRightController.text = '$turnRight';
-    lookUpController.text = '$lookUp';
-    lookDownController.text = '$lookDown';
+    // lookUpController.text = '$lookUp';
+    // lookDownController.text = '$lookDown';
     fromSizeController.text = '$fromSize';
     toSizeController.text = '$toSize';
     fromTopController.text = '$fromTop';
@@ -303,6 +338,8 @@ class _MyHomePageState extends State<MyHomePage> {
     toLeftController.text = '$toLeft';
     fromStraightController.text = '$fromStraight';
     toStraightController.text = '$toStraight';
+    fromMidController.text = '$fromMid';
+    toMidController.text = '$toMid';
   }
 
   List<Widget> _buildInputs() {
@@ -313,57 +350,68 @@ class _MyHomePageState extends State<MyHomePage> {
         id: 'smilling',
       ),
       _buildInput(
-          title: 'Close eye Probability',
-          controller: closeEyeController,
-          id: 'closeEye'),
-      _buildInput(
-        title: 'Open eye Probability',
-        controller: openEyeController,
-        id: 'openEye',
+        title: 'Eye Probability',
+        controller: closeEyeController,
+        controller2: openEyeController,
+        id: 'closeEye',
+        id2: 'openEye',
       ),
       _buildInput(
-        title: 'Turn left',
+        title: 'Turn left/right\n(headEulerAngleY)',
         controller: turnLeftController,
+        controller2: turnRightController,
         id: 'turnLeft',
+        id2: 'turnRight'
       ),
+      // _buildInput(
+      //   title: 'Turn right\n(headEulerAngleY)',
+      //   controller: turnRightController,
+      //   id: 'turnRight',
+      // ),
+      // _buildInput(
+      //   title: 'Look up/down\n(headEulerAngleX)',
+      //   controller: lookUpController,
+      //   controller2: lookDownController,
+      //   id: 'lookUp',
+      //   id2: 'lookDown'
+      // ),
+      // _buildInput(
+      //   title: 'Look down\n(headEulerAngleX)',
+      //   controller: lookDownController,
+      //   id: 'lookDown',
+      // ),
       _buildInput(
-        title: 'Turn right',
-        controller: turnRightController,
-        id: 'turnRight',
+        title: 'Look straight B\n(headEulerAngleX)',
+        controller: fromMidController,
+        controller2: toMidController,
+        id: 'fromMid',
+        id2: 'toMid',
       ),
+      
       _buildInput(
-        title: 'Look up',
-        controller: lookUpController,
-        id: 'lookUp',
-      ),
-      _buildInput(
-        title: 'Look down',
-        controller: lookDownController,
-        id: 'lookDown',
-      ),
-      _buildInput(
-        title: 'Look straight',
+        title: 'Look straight A\n(frame.midX)',
         controller: fromStraightController,
         controller2: toStraightController,
         id: 'fromStraight',
         id2: 'toStraight',
       ),
+      
       _buildInput(
-        title: 'Face size',
+        title: 'Face size\n(frame.height)',
         controller: fromSizeController,
         controller2: toSizeController,
         id: 'fromSize',
         id2: 'toSize',
       ),
       _buildInput(
-        title: 'Face top',
+        title: 'Face top\n(frame.origin.x)',
         controller: fromTopController,
         controller2: toTopController,
         id: 'fromTop',
         id2: 'toTop',
       ),
       _buildInput(
-        title: 'Face left',
+        title: 'Face left\n(frame.origin.y)',
         controller: fromLeftController,
         controller2: toLeftController,
         id: 'fromLeft',
@@ -459,7 +507,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         callback: () {
                           final doubleVal = double.tryParse(value);
 
-                          if (doubleVal != double.nan && doubleVal != null) {
+                          if (!doubleVal.isNaN && doubleVal != null) {
                             StorageUtils.instance
                                 .setDouble(key: id2, val: doubleVal);
                           }
@@ -519,13 +567,6 @@ class CommaFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     String _text = newValue.text;
-    //This is only if you need signed numbers. Will convert the first '.'(dot) to '-'(minus)
-    //if (_text.isNotEmpty && _text[0] == '.')
-    //  _text = _text.replaceFirst('.', '-');
-    // print('%% ${newValue.copyWith(
-    //   text: _text.replaceAll('.', ','),
-    // ).text}');
-    print('%% ${_text.replaceAll(',', '.')}');
 
     return newValue.copyWith(
       text: _text.replaceAll(',', '.'),

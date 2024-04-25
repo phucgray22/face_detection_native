@@ -15,6 +15,13 @@ class CameraViewController: UIViewController {
     @IBOutlet fileprivate weak var horizontalStack: UIStackView!
     @IBOutlet fileprivate weak var scrollView: UIScrollView!
     
+    @IBOutlet fileprivate weak var tsFrameMidX: UILabel!
+    @IBOutlet fileprivate weak var tsheadEulerAngleX: UILabel!
+    @IBOutlet fileprivate weak var tsheadEulerAngleY: UILabel!
+    @IBOutlet fileprivate weak var tsFrameHeight: UILabel!
+    @IBOutlet fileprivate weak var tsFrameOriginX: UILabel!
+    @IBOutlet fileprivate weak var tsFrameOriginY: UILabel!
+    
     var flutterMethodChannel: FlutterMethodChannel?
     var steps: [Step] = []
     var detections: Detections = Detections()
@@ -615,9 +622,11 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         let straightRange =
             Int(detections.lookStraight![0])...Int(detections.lookStraight![1])
         
-        print("\(Int(frame.midX))")
+        let midRange = Int(detections.mid![0])...Int(detections.mid![1])
         
-        return straightRange.contains(Int(frame.midX)) && (0...20).contains(Int(face.headEulerAngleX))
+        print("\(Int(frame.midX)) : \(Int(face.headEulerAngleX))")
+        
+        return straightRange.contains(Int(frame.midX)) && midRange.contains(Int(face.headEulerAngleX))
     }
     
     private func isFaceInFrame(face: Face) -> FaceFrameState {
@@ -657,10 +666,17 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         let face = faces.first
         
         let faceFrameState = isFaceInFrame(face: face!)
+        
+        tsFrameMidX.text = "frame.midX: \(Int(face!.frame.midX))"
+        tsheadEulerAngleX.text = "headEulerAngleX: \(Int(face!.headEulerAngleX))"
+        tsheadEulerAngleY.text = "headEulerAngleY: \(Int(face!.headEulerAngleY))"
+        tsFrameHeight.text = "frame.height: \(Int(face!.frame.height))"
+        tsFrameOriginX.text = "frame.origin.x: \(Int(face!.frame.origin.x))"
+        tsFrameOriginY.text = "frame.origin.y: \(Int(face!.frame.origin.y))"
                 
         if(faceFrameState == .inFrame) {
             if(isLookStraight(face: face!)) {
-                self.changeCircleColor(color: UIColor.blue)
+                self.changeCircleColor(color: UIColor.blue.withAlphaComponent(0.5))
                 
                 if(currentStepIndex == -1) {
                     currentStepIndex+=1
@@ -720,7 +736,7 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
                         
                     }
                 } else {
-                    lookStraight = false
+//                    lookStraight = false
                 }
                 
                 
@@ -730,10 +746,10 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         if hasFace {
             self.changeCircleColor(color: UIColor.blue)
         } 
-        else if(!lookStraight) {
-            self.changeTutorialText(text: "Vui lòng nhìn thẳng")
-            self.changeCircleColor(color: UIColor(white: 1, alpha: 0))
-        }
+//        else if(!lookStraight) {
+//            self.changeTutorialText(text: "Vui lòng nhìn thẳng")
+//            self.changeCircleColor(color: UIColor(white: 1, alpha: 0))
+//        }
         else {
             self.changeTutorialText(text: "Di chuyển mặt vào gần khung tròn")
             self.changeCircleColor(color: UIColor(white: 1, alpha: 0))
@@ -829,6 +845,7 @@ struct Detections {
     var lookUpHeadEulerAngleX: Double?
     var lookDownHeadEulerAngleX: Double?
     var lookStraight: [Double]?
+    var mid: [Double]?
     var height: [Int]?
     var width: [Int]?
     var top: [Int]?

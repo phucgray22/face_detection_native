@@ -78,16 +78,17 @@ import Flutter
                       detections.closeProbability = (detectionsMap["closeEyeProbability"] as? Double) ?? 0.1
                       detections.openProbability = (detectionsMap["openProbability"] as? Double) ?? 0.9
                       
-                      detections.turnLeftHeadEulerAngleY = (detectionsMap["turnleft"] as? Double) ?? -30.0
+                      detections.turnLeftHeadEulerAngleY = (detectionsMap["turnleft"] as? Double) ?? -20.0
                       detections.turnRightHeadEulerAngleY = (detectionsMap["turnRight"] as? Double) ?? 40.0
-                      detections.lookUpHeadEulerAngleX = (detectionsMap["lookUp"] as? Double) ?? 30.0
-                      detections.lookDownHeadEulerAngleX = (detectionsMap["lookDown"] as? Double) ?? -15.0
-                      detections.lookStraight = (detectionsMap["lookStraight"] as? [Double]) ?? [-15, 20]
+//                      detections.lookUpHeadEulerAngleX = (detectionsMap["lookUp"] as? Double) ?? 30.0
+//                      detections.lookDownHeadEulerAngleX = (detectionsMap["lookDown"] as? Double) ?? -15.0
+                      detections.lookStraight = (detectionsMap["lookStraight"] as? [Double]) ?? [200, 300]
+                      detections.mid = (detectionsMap["mid"] as? [Double]) ?? [-12, 12]
                       
-                      detections.height = (detectionsMap["faceSize"] as? [Int]) ?? [180, 300]
-                      detections.width = (detectionsMap["faceSize"] as? [Int]) ?? [180, 300]
-                      detections.top = (detectionsMap["faceTop"] as? [Int]) ?? [30, 150]
-                      detections.left = (detectionsMap["faceLeft"] as? [Int]) ?? [90, 150]
+                      detections.height = (detectionsMap["faceSize"] as? [Int]) ?? [250, 290]
+                      detections.width = (detectionsMap["faceSize"] as? [Int]) ?? [250, 290]
+                      detections.top = (detectionsMap["faceTop"] as? [Int]) ?? [0, 150]
+                      detections.left = (detectionsMap["faceLeft"] as? [Int]) ?? [10, 80]
                       
                       cameraViewController.detections = detections
                       
