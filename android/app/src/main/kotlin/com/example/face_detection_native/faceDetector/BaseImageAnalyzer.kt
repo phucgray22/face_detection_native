@@ -24,7 +24,6 @@ abstract class BaseImageAnalyzer<T> : ImageAnalysis.Analyzer {
                     onSuccess(
                         results,
                         it.cropRect,
-                        imageProxy,
                     )
 
                     imageProxy.close()
@@ -43,7 +42,6 @@ abstract class BaseImageAnalyzer<T> : ImageAnalysis.Analyzer {
     protected abstract fun onSuccess(
         results: T,
         rect: Rect,
-        imageProxy: ImageProxy
     )
 
     protected abstract fun onFailure(e: Exception)

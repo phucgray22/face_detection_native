@@ -28,7 +28,6 @@ class CameraViewController: UIViewController {
     var currentFunctionType: Function = .training
     
     @IBAction func checkInClicked(_ sender: UIButton) {
-        print("BACK")
         var listBase64: [String] = []
         
         for item in imageViews {
@@ -40,6 +39,7 @@ class CameraViewController: UIViewController {
         }
         
         flutterMethodChannel?.invokeMethod("getListBase64", arguments: listBase64)
+        
         self.dismiss(animated: true)
     }
     
@@ -74,7 +74,7 @@ class CameraViewController: UIViewController {
         return annotationOverlayView
     }()
     
-    private lazy var previewOverlayView: UIImageView = {
+    private lazy var  : UIImageView = {
         precondition(isViewLoaded)
         let previewOverlayView = UIImageView(frame: .zero)
         previewOverlayView.contentMode = UIView.ContentMode.scaleAspectFill
@@ -624,7 +624,7 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         let midRange = Int(detections.mid![0])...Int(detections.mid![1])
         
-        print("\(Int(frame.midX)) : \(Int(face.headEulerAngleX))")
+//        print("\(Int(frame.midX)) : \(Int(face.headEulerAngleX))")
         
         return straightRange.contains(Int(frame.midX)) && midRange.contains(Int(face.headEulerAngleX))
     }
@@ -636,13 +636,12 @@ extension CameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         let xRange = detections.top![0]...detections.top![1]
         let yRange = detections.left![0]...detections.left![1]
+        // face.headEulerAngleZ -> ??? [-15, 10]
         
         let isValid =
             heightWidthRange.contains(Int(frame.height)) &&
             xRange.contains(Int(frame.origin.x)) &&
             yRange.contains(Int(frame.origin.y))
-        
-//        print("\(Int(frame.origin.x)) : \(Int(frame.origin.y))")
         
         if isValid {
             return .inFrame
@@ -810,25 +809,8 @@ public enum Detector: String {
 }
 
 private enum Constant {
-    static let alertControllerTitle = "Vision Detectors"
-    static let alertControllerMessage = "Select a detector"
-    static let cancelActionTitleText = "Cancel"
     static let videoDataOutputQueueLabel = "com.google.mlkit.visiondetector.VideoDataOutputQueue"
     static let sessionQueueLabel = "com.google.mlkit.visiondetector.SessionQueue"
-    static let noResultsMessage = "No Results"
-    static let localModelFile = (name: "bird", type: "tflite")
-    static let labelConfidenceThreshold = 0.75
-    static let smallDotRadius: CGFloat = 4.0
-    static let lineWidth: CGFloat = 3.0
-    static let originalScale: CGFloat = 1.0
-    static let padding: CGFloat = 10.0
-    static let resultsLabelHeight: CGFloat = 200.0
-    static let resultsLabelLines = 5
-    static let imageLabelResultFrameX = 0.4
-    static let imageLabelResultFrameY = 0.1
-    static let imageLabelResultFrameWidth = 0.5
-    static let imageLabelResultFrameHeight = 0.8
-    static let segmentationMaskAlpha: CGFloat = 0.5
 }
 
 struct Step {

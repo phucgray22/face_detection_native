@@ -4,7 +4,7 @@ import java.io.Serializable
 import java.util.HashMap
 
 data class StepData(val id: String, val description: String): Serializable
-data class OpenCameraOptions(val steps: Array<StepData>, val detections: HashMap<String, Object>): Serializable {
+data class OpenCameraOptions(val steps: Array<StepData>, val detections: HashMap<String, Object>, val function: String): Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

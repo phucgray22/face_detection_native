@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
@@ -16,9 +17,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageProxy
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
@@ -34,6 +35,12 @@ import kotlinx.android.synthetic.main.activity_demo.circularOverlay
 import kotlinx.android.synthetic.main.activity_demo.listImagesContainer
 import kotlinx.android.synthetic.main.activity_demo.previewView
 import kotlinx.android.synthetic.main.activity_demo.stepText
+import kotlinx.android.synthetic.main.activity_demo.tsHeadEulerAngleX
+import kotlinx.android.synthetic.main.activity_demo.tsHeadEulerAngleY
+import kotlinx.android.synthetic.main.activity_demo.tsHeight
+import kotlinx.android.synthetic.main.activity_demo.tsLeft
+import kotlinx.android.synthetic.main.activity_demo.tsMidX
+import kotlinx.android.synthetic.main.activity_demo.tsTop
 
 class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var cameraManager: CameraManager
@@ -41,17 +48,19 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var options: OpenCameraOptions
     private lateinit var horizontalScrollView: HorizontalScrollView
 
-    private var smilingProbability: Double = 0.7
-    private var turnLeftHeadEulerAngleY: Double = 30.0
-    private var turnRightHeadEulerAngleY: Double = -40.0
+    private var smilingProbability: Double = 0.8
+    private var openEyeProbability: Double = 0.9
+    private var closeEyeProbability: Double = 0.1
+    private var turnLeftHeadEulerAngleY: Double = -20.0
+    private var turnRightHeadEulerAngleY: Double = 40.0
     private var lookUpHeadEulerAngleX: Double = 30.0;
     private var lookDownHeadEulerAngleX: Double = -15.0;
-    private var closeEyeProbability: Double = 0.05
-    private var openEyeProbability: Double = 0.05
-    private var faceHeightRange: ArrayList<Int> = arrayListOf(150, 400)
-    private var faceWidthRange: ArrayList<Int> = arrayListOf(150, 400)
-    private var faceTopRange: ArrayList<Int> = arrayListOf(100, 290)
-    private var faceLeftRange: ArrayList<Int> = arrayListOf(10, 220)
+    private var lookStraightRange: ArrayList<Int> = arrayListOf(210, 290)
+    private var faceMidRange: ArrayList<Int> = arrayListOf(-12, 12)
+    private var faceSizeRange: ArrayList<Int> = arrayListOf(250, 290)
+    private var faceTopRange: ArrayList<Int> = arrayListOf(0, 150)
+    private var faceLeftRange: ArrayList<Int> = arrayListOf(10, 80)
+    private var currentFunctionType: Function = Function.training
 
 
     private var currentStepIndex: Int = -1
@@ -72,6 +81,16 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         checkForPermission()
 
         options = intent.getSerializableExtra("options") as OpenCameraOptions
+
+        when(options.function) {
+            "training" -> {
+                currentFunctionType = Function.training
+            }
+            "checkIn" -> {
+                currentFunctionType = Function.checkIn
+            }
+        }
+
         horizontalScrollView = findViewById(R.id.hScrollView)
 
 
@@ -82,20 +101,17 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun setupView() {
-        //
         changeCameraSize()
-
-        // create list images placeholder (to load later)
         createImagesPlaceHolder()
-
-        //
         toggleCheckInButton(false)
     }
 
     private fun changeCameraSize() {
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val circleSize = minOf(displayMetrics.widthPixels * 0.95, MAX_CAMERA_SIZE).toInt()
+
+//        val circleSize = minOf(displayMetrics.widthPixels * 0.95, MAX_CAMERA_SIZE).toInt()
+        val circleSize = (displayMetrics.widthPixels * 0.9).toInt()
 
 
         // Update layout params for previewView
@@ -178,77 +194,25 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private fun loadDetectionOptions() {
         var detections = options.detections
 
-        if(detections.containsKey("smilingProbability")) {
-            smilingProbability = detections["smilingProbability"].toString()?.toDouble()
-        }
-
-        if(detections.containsKey("turnHead")) {
-            val obj = detections["turnHead"] as HashMap<String, Object>
-
-            if(obj.containsKey("left")) {
-                turnLeftHeadEulerAngleY = obj["left"].toString()?.toDouble()
-            }
-
-            if(obj.containsKey("right")) {
-                turnRightHeadEulerAngleY = obj["right"].toString()?.toDouble()
-            }
-
-            if(obj.containsKey("up")) {
-                lookUpHeadEulerAngleX = obj["up"].toString()?.toDouble()
-            }
-
-            if(obj.containsKey("down")) {
-                lookDownHeadEulerAngleX = obj["down"].toString()?.toDouble()
+        detections.forEach { (key, value) ->
+            when (key) {
+                DETECTION_KEY_SMILING -> smilingProbability = value as Double
+                DETECTION_KEY_OPEN_EYE -> openEyeProbability = value as Double
+                DETECTION_KEY_CLOSE_EYE -> closeEyeProbability = value as Double
+                DETECTION_KEY_TURN_LEFT -> turnLeftHeadEulerAngleY = value as Double
+                DETECTION_KEY_TURN_RIGHT -> turnRightHeadEulerAngleY = value?.toString()?.toDouble()
+                DETECTION_KEY_LOOK_UP -> lookUpHeadEulerAngleX = value as Double
+                DETECTION_KEY_LOOK_DOWN -> lookDownHeadEulerAngleX = value as Double
+                DETECTION_KEY_LOOK_STRAIGHT -> lookStraightRange = value as ArrayList<Int>
+                DETECTION_KEY_FACE_MID -> faceMidRange = value as ArrayList<Int>
+                DETECTION_KEY_FACE_SIZE -> faceSizeRange = value as ArrayList<Int>
+                DETECTION_KEY_FACE_TOP -> faceTopRange = value as ArrayList<Int>
+                DETECTION_KEY_FACE_LEFT -> faceLeftRange = value as ArrayList<Int>
+                // Add more cases for other keys if needed
             }
         }
 
-        if(detections.containsKey("closeOpenEye")) {
-            val obj = detections["closeOpenEye"] as HashMap<String, Object>
-
-            if(obj.containsKey("closeProbability")) {
-                closeEyeProbability = obj["closeProbability"].toString()?.toDouble()
-            }
-
-            if(obj.containsKey("openProbability")) {
-                openEyeProbability = obj["openProbability"].toString()?.toDouble()
-            }
-        }
-
-        if(detections.containsKey("faceInCamera")) {
-            val obj = detections["faceInCamera"] as HashMap<String, Object>
-
-            if(obj.containsKey("height")) {
-                var height = obj["height"] as ArrayList<Int>
-
-                if(height.count() == 2) {
-                    faceHeightRange = height
-                }
-            }
-
-            if(obj.containsKey("width")) {
-                var width = obj["width"] as ArrayList<Int>
-
-                if(width.count() == 2) {
-                    faceWidthRange = width
-                }
-            }
-
-            if(obj.containsKey("top")) {
-                var top = obj["top"] as ArrayList<Int>
-
-                if(top.count() == 2) {
-                    faceTopRange = top
-                }
-            }
-
-            if(obj.containsKey("left")) {
-                var left = obj["left"] as ArrayList<Int>
-
-                if(left.count() == 2) {
-                    faceLeftRange = left
-                }
-            }
-        }
+//        Log.d("debug123", "turnLeftHeadEulerAngleY: ${turnLeftHeadEulerAngleY}")
     }
 
     //
@@ -321,74 +285,159 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         })
     }
 
-    private fun onDetected(faces: List<Face>, imageProxy: ImageProxy) {
+    private fun isLookStraight(face: Face): Boolean {
+//        Log.d("debug123", "${face.boundingBox.exactCenterY().toInt()} in [${faceMidRange[0]} .. ${faceMidRange[1]}]")
+        Log.d("debug123", "${face.headEulerAngleX.toInt()} in [${lookStraightRange[0]} .. ${lookStraightRange[1]}]")
 
+        return (face.boundingBox.exactCenterY().toInt() in faceMidRange[0]..faceMidRange[1]) &&
+                (face.headEulerAngleX.toInt() in lookStraightRange[0]..lookStraightRange[1])
+    }
+
+    private fun getFaceFrameState(face: Face): FaceFrameState {
+        val bouncingBox = face.boundingBox
+
+//        Log.d("debug123", "${bouncingBox.height().toString()} : ${bouncingBox.top} : ${bouncingBox.left}")
+
+        val isValid =
+            bouncingBox.height() in faceSizeRange[0]..faceSizeRange[1] &&
+            bouncingBox.top in faceTopRange[0]..faceTopRange[1] &&
+            bouncingBox.left in faceLeftRange[0]..faceLeftRange[1]
+
+        if(isValid) {
+            return FaceFrameState.InFrame
+        }
+
+        if(bouncingBox.height() > faceSizeRange[1]) {
+            return FaceFrameState.TooClose
+        }
+
+        return FaceFrameState.TooFar
+    }
+
+    private fun detectTraining(faces: List<Face>) {
         if(faces.isEmpty() || currentStepIndex >= options.steps.count()) {
             changeCircleColor(Color.TRANSPARENT)
-            return;
+            return
         }
 
         if(faces.count() > 1) {
-            stepText.text = "Quá nhiều người"
+            stepText.text = SO_MANY_PEOPLE
             changeCircleColor(Color.RED)
-            return;
+            return
         }
 
         val face = faces.first()
-        val bouncingBox = face.boundingBox
 
-        Log.d("debug123", "${bouncingBox.height()} - ${bouncingBox.width()}")
-//        Log.d("debug123", face.headEulerAngleX.toString())
+        tsMidX.text = "boundingBox.exactCenterY: ${face.boundingBox.exactCenterY()}"
+        tsHeight.text = "bouncingBox.height: ${face.boundingBox.height()}"
+        tsLeft.text = "bouncingBox.left: ${face.boundingBox.left}"
+        tsTop.text = "bouncingBox.top: ${face.boundingBox.top}"
+        tsHeadEulerAngleX.text = "headEulerAngleX: ${face.headEulerAngleX}"
+        tsHeadEulerAngleY.text = "headEulerAngleY: ${face.headEulerAngleY}"
 
-        if(
-            bouncingBox.height() in faceHeightRange[0]..faceHeightRange[1] &&
-            bouncingBox.width() in faceWidthRange[0]..faceWidthRange[1] &&
-            bouncingBox.top in faceTopRange[0]..faceTopRange[1] &&
-            bouncingBox.left in faceLeftRange[0]..faceLeftRange[1]
-            ) {
-            if(!loading) {
-                changeCircleColor()
+        when (getFaceFrameState(face)) {
+            FaceFrameState.InFrame -> {
+
+                if(isLookStraight(face)) {
+                    changeCircleColor()
+
+                    if(currentStepIndex == -1) {
+                        currentStepIndex++
+
+                        Utils.delayFun(
+                            {
+                                changeStep(options.steps.first())
+
+                            }, 700
+                        )
+                    } else {
+                        if(stepText.text != currentStep?.description) {
+                            stepText.text = currentStep?.description
+                        }
+
+                        if((currentStepIndex >= 0 && currentStepIndex < options.steps.count()) && isFaceMatchCondition(options.steps[currentStepIndex]?.id, face)) {
+                            handleStepSuccess()
+                        }
+                    }
+                }
+                else {
+                    stepText.text = PLEASE_LOOK_STRAIGHT
+                    changeCircleColor(Color.TRANSPARENT)
+                }
+
+
             }
 
-            if(currentStepIndex == -1) {
-                currentStepIndex++
-
-                Utils.delayFun(
-                    {
-                        changeStep(options.steps.first())
-
-                    }, 700
-                )
-            } else {
-                if(stepText.text != currentStep?.description) {
-                    stepText.text = currentStep?.description
-                }
-
-                if(!loading) {
-
-                }
-
-
-
-                if((currentStepIndex >= 0 && currentStepIndex < options.steps.count()) && isFaceMatchCondition(options.steps[currentStepIndex]?.id, face, imageProxy)) {
-                    handleStepSuccess()
-                } else {
-//                    currentStepIndex--
-                }
+            FaceFrameState.TooFar -> {
+                stepText.text = TOO_FAR
+                changeCircleColor(Color.TRANSPARENT)
             }
 
-        } else {
-            if(!loading) {
-                stepText.text = "Di chuyển mặt vào gần camera"
+            FaceFrameState.TooClose -> {
+                stepText.text = TOO_CLOSE
                 changeCircleColor(Color.TRANSPARENT)
             }
         }
     }
 
+    private fun detectCheckIn(faces: List<Face>) {
+        var hasFace = false
+
+        for(face in faces) {
+            when (getFaceFrameState(face)) {
+                FaceFrameState.InFrame -> {
+                    if(isLookStraight(face)) {
+                        hasFace = true
+
+                        if(currentStepIndex == -1) {
+                            currentStepIndex++
+
+                            Utils.delayFun(
+                                {
+                                    changeStep(options.steps.first())
+
+                                }, 700
+                            )
+                        } else {
+                            if(stepText.text != currentStep?.description) {
+                                stepText.text = currentStep?.description
+                            }
+
+                            if((currentStepIndex >= 0 && currentStepIndex < options.steps.count()) && isFaceMatchCondition(options.steps[currentStepIndex]?.id, face)) {
+                                handleStepSuccess()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if(hasFace) {
+            changeCircleColor()
+        } else {
+            stepText.text = TOO_FAR
+            changeCircleColor(Color.TRANSPARENT)
+        }
+    }
+
+    private fun onDetected(faces: List<Face>) {
+        when(currentFunctionType) {
+            Function.training -> {
+                detectTraining(faces)
+            }
+            Function.checkIn -> {
+                detectCheckIn(faces)
+            }
+        }
+
+    }
 
 
-    private fun isFaceMatchCondition(stepID: String, face: Face?, imageProxy: ImageProxy): Boolean {
+
+    private fun isFaceMatchCondition(stepID: String, face: Face?): Boolean {
         if(face == null) return false
+
+//        Log.d("debug123", "${face.headEulerAngleY} >= ${turnLeftHeadEulerAngleY}")
 
         val isMatched = when(stepID) {
             "turnLeft" -> {
@@ -434,13 +483,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
 
-        if(isMatched) {
-
-        }
-
         return isMatched
-
-//        return false
     }
 
     private var _imageCapture: ImageCapture? = null
@@ -659,15 +702,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    companion object {
-        private const val MAX_CAMERA_SIZE = 600.0
 
-        private const val REQUEST_CODE_PERMISSIONS = 10
-
-        private val REQUIRED_PERMISSIONS = arrayOf(
-            android.Manifest.permission.CAMERA
-            )
-    }
 
     private val detector = FaceDetection.getClient(FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -712,4 +747,49 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
     }
+
+    companion object {
+        private const val MAX_CAMERA_SIZE = 600.0
+
+        private const val REQUEST_CODE_PERMISSIONS = 10
+
+        private val REQUIRED_PERMISSIONS = arrayOf(
+            android.Manifest.permission.CAMERA
+        )
+
+        //
+
+        private const val DETECTION_KEY_SMILING = "smilingProbability"
+        private const val DETECTION_KEY_OPEN_EYE = "openEyeProbability"
+        private const val DETECTION_KEY_CLOSE_EYE = "smilingProbability"
+        private const val DETECTION_KEY_TURN_LEFT = "turnLeft"
+        private const val DETECTION_KEY_TURN_RIGHT = "turnRight"
+        private const val DETECTION_KEY_LOOK_UP = "lookUp"
+        private const val DETECTION_KEY_LOOK_DOWN = "lookDown"
+        private const val DETECTION_KEY_LOOK_STRAIGHT = "lookStraightRange"
+        private const val DETECTION_KEY_FACE_MID = "faceMidRange"
+        private const val DETECTION_KEY_FACE_SIZE = "faceSizeRange"
+        private const val DETECTION_KEY_FACE_TOP = "faceTopRange"
+        private const val DETECTION_KEY_FACE_LEFT = "faceLeftRange"
+
+        //
+
+        private const val SO_MANY_PEOPLE = "Quá nhiều người"
+        private const val PLEASE_LOOK_STRAIGHT = "Vui lòng nhìn thẳng"
+        private const val TOO_CLOSE = "Mặt quá gần"
+        private const val TOO_FAR = "Di chuyển mặt vào gần camera"
+    }
+
+    enum class FaceFrameState {
+        InFrame,
+        TooClose,
+        TooFar,
+    }
+
+    enum class Function {
+        training,
+        checkIn
+    }
+
+
 }

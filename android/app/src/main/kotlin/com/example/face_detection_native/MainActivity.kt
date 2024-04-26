@@ -37,12 +37,15 @@ class MainActivity: FlutterActivity() {
                     val steps = (args?.get("steps") as List<Map<String, String>>)
                         .map { StepData(it["id"] ?: "", it["description"] ?: "") }
                         .toTypedArray()
+
                     val detections = args?.get("detections") as HashMap<String, Any>
+
+                    val function = args?.get("function") as String
 
 
 
 //                    // Construct the OpenCameraOptions object
-                    val options = OpenCameraOptions(steps, detections as HashMap<String, Object>)
+                    val options = OpenCameraOptions(steps, detections as HashMap<String, Object>, function)
 
                     val intent = Intent(this, DemoActivity::class.java)
                     intent.putExtra("options", options as Serializable)

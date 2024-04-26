@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:face_detection_native/debounce.dart';
 import 'package:face_detection_native/storage.dart';
@@ -47,6 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
   static const _channel = MethodChannel('irhp/channel');
   final urlTrain = 'https://w3vd768m-5177.asse.devtunnels.ms/TrainImage2';
   final urlVerify = 'https://w3vd768m-5177.asse.devtunnels.ms/VerifyImage';
+
+  bool get isIOS => Platform.isIOS;
   
 
   String getID() {
@@ -272,27 +275,27 @@ class _MyHomePageState extends State<MyHomePage> {
       'closeEyeProbability': getValue(closeEyeController.text),
       'openEyeProbability': getValue(openEyeController.text),
       'smilingProbability': getValue(smillingController.text),
-      'turnleft': getValue(turnLeftController.text),
+      'turnLeft': getValue(turnLeftController.text),
       'turnRight': getValue(turnRightController.text),
       'lookUp': getValue(lookUpController.text),
       'lookDown': getValue(lookDownController.text),
-      'lookStraight': [
+      'lookStraightRange': [
         getValue(fromStraightController.text),
         getValue(toStraightController.text),
       ],
-      'mid': [
+      'faceMidRange': [
         getValue(fromMidController.text),
         getValue(toMidController.text),
       ],
-      'faceSize': [
+      'faceSizeRange': [
         getValue(fromSizeController.text),
         getValue(toSizeController.text)
       ],
-      'faceTop': [
+      'faceTopRange': [
         getValue(fromTopController.text),
         getValue(toTopController.text)
       ],
-      'faceLeft': [
+      'faceLeftRange': [
         getValue(fromLeftController.text),
         getValue(toLeftController.text)
       ],
@@ -303,33 +306,46 @@ class _MyHomePageState extends State<MyHomePage> {
     final smilling = StorageUtils.instance.getDouble(key: 'smilling') ?? 0.8;
     final closeEye = StorageUtils.instance.getDouble(key: 'closeEye') ?? 0.1;
     final openEye = StorageUtils.instance.getDouble(key: 'openEye') ?? 0.9;
-    final turnLeft = StorageUtils.instance.getDouble(key: 'turnLeft') ?? -20;
-    final turnRight = StorageUtils.instance.getDouble(key: 'turnRight') ?? 40;
-    // final lookUp = StorageUtils.instance.getDouble(key: 'lookUp') ?? 30;
-    // final lookDown = StorageUtils.instance.getDouble(key: 'lookDown') ?? -15;
-    final fromSize = StorageUtils.instance.getDouble(key: 'fromSize') ?? 250;
-    final toSize = StorageUtils.instance.getDouble(key: 'toSize') ?? 290;
+    final turnLeft = StorageUtils.instance.getDouble(key: 'turnLeft') ?? (isIOS ? -20 : 30);
+    final turnRight = StorageUtils.instance.getDouble(key: 'turnRight') ?? (isIOS ? 40 : -40);
+    final lookUp = StorageUtils.instance.getDouble(key: 'lookUp') ?? 30;
+    final lookDown = StorageUtils.instance.getDouble(key: 'lookDown') ?? -15;
 
-    final fromTop = StorageUtils.instance.getDouble(key: 'fromTop') ?? 0;
-    final toTop = StorageUtils.instance.getDouble(key: 'toTop') ?? 150;
-    final fromLeft = StorageUtils.instance.getDouble(key: 'fromLeft') ?? 10;
-    final toLeft = StorageUtils.instance.getDouble(key: 'toLeft') ?? 80;
+    final fromSize = StorageUtils.instance.getDouble(key: 'fromSize') 
+         ?? (isIOS ? 250 : 250);
+    final toSize = StorageUtils.instance.getDouble(key: 'toSize') 
+        ?? (isIOS ? 290 : 350);
 
-    final fromStraight = StorageUtils.instance.getDouble(key: 'fromStraight') ?? 210;
-    final toStraight = StorageUtils.instance.getDouble(key: 'toStraight') ?? 290;
+    final fromTop = 
+      StorageUtils.instance.getDouble(key: 'fromTop') 
+        ?? (isIOS ? 0 : 140);
+    final toTop = StorageUtils.instance.getDouble(key: 'toTop') 
+        ?? (isIOS ? 150 : 250);
+
+    final fromLeft = StorageUtils.instance.getDouble(key: 'fromLeft') 
+        ?? (isIOS ? 10 : 0);
+    final toLeft = StorageUtils.instance.getDouble(key: 'toLeft') 
+        ?? (isIOS ? 80 : 130);
+
+    final fromStraight = StorageUtils.instance.getDouble(key: 'fromStraight') 
+      ?? (isIOS ? 210 : -20);
+    final toStraight = StorageUtils.instance.getDouble(key: 'toStraight') 
+      ?? (isIOS ? 290 : 20);
 
     final fromMid =
-        StorageUtils.instance.getDouble(key: 'fromMid') ?? -12;
+        StorageUtils.instance.getDouble(key: 'fromMid') 
+          ?? (isIOS ? -12 : 280);
     final toMid =
-        StorageUtils.instance.getDouble(key: 'toMid') ?? 12;
+        StorageUtils.instance.getDouble(key: 'toMid') 
+          ?? (isIOS ? 12 : 315);
 
     smillingController.text = '$smilling';
     closeEyeController.text = '$closeEye';
     openEyeController.text = '$openEye';
     turnLeftController.text = '$turnLeft';
     turnRightController.text = '$turnRight';
-    // lookUpController.text = '$lookUp';
-    // lookDownController.text = '$lookDown';
+    lookUpController.text = '$lookUp';
+    lookDownController.text = '$lookDown';
     fromSizeController.text = '$fromSize';
     toSizeController.text = '$toSize';
     fromTopController.text = '$fromTop';
@@ -356,32 +372,21 @@ class _MyHomePageState extends State<MyHomePage> {
         id: 'closeEye',
         id2: 'openEye',
       ),
+      isIOS
+          ? _buildInput(
+              title: 'Turn left/right\n(headEulerAngleY)',
+              controller: turnLeftController,
+              controller2: turnRightController,
+              id: 'turnLeft',
+              id2: 'turnRight')
+          : _buildInput(
+              title: 'Turn left/right\n(headEulerAngleY)',
+              controller2: turnLeftController,
+              controller: turnRightController,
+              id2: 'turnLeft',
+              id: 'turnRight'),
       _buildInput(
-        title: 'Turn left/right\n(headEulerAngleY)',
-        controller: turnLeftController,
-        controller2: turnRightController,
-        id: 'turnLeft',
-        id2: 'turnRight'
-      ),
-      // _buildInput(
-      //   title: 'Turn right\n(headEulerAngleY)',
-      //   controller: turnRightController,
-      //   id: 'turnRight',
-      // ),
-      // _buildInput(
-      //   title: 'Look up/down\n(headEulerAngleX)',
-      //   controller: lookUpController,
-      //   controller2: lookDownController,
-      //   id: 'lookUp',
-      //   id2: 'lookDown'
-      // ),
-      // _buildInput(
-      //   title: 'Look down\n(headEulerAngleX)',
-      //   controller: lookDownController,
-      //   id: 'lookDown',
-      // ),
-      _buildInput(
-        title: 'Look straight B\n(headEulerAngleX)',
+        title: 'Look straight B\n${isIOS ? '(frame.midX)' : 'exactCenterY'}',
         controller: fromMidController,
         controller2: toMidController,
         id: 'fromMid',
@@ -389,7 +394,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       
       _buildInput(
-        title: 'Look straight A\n(frame.midX)',
+        title: 'Look straight A\n(headEulerAngleX)',
         controller: fromStraightController,
         controller2: toStraightController,
         id: 'fromStraight',
@@ -404,14 +409,15 @@ class _MyHomePageState extends State<MyHomePage> {
         id2: 'toSize',
       ),
       _buildInput(
-        title: 'Face top\n(frame.origin.x)',
+        title: 'Face top\n${isIOS  ? '(frame.origin.x)' : '(bouncingBox.top)'}',
         controller: fromTopController,
         controller2: toTopController,
         id: 'fromTop',
         id2: 'toTop',
       ),
       _buildInput(
-        title: 'Face left\n(frame.origin.y)',
+        // title: 'Face left\n(frame.origin.y)',
+        title: 'Face left\n${isIOS ? '(frame.origin.y)' : '(bouncingBox.left)'}',
         controller: fromLeftController,
         controller2: toLeftController,
         id: 'fromLeft',
@@ -477,11 +483,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       tag: id,
                       milliseconds: 500,
                       callback: () {
-                        final doubleVal = double.tryParse(value);
+                        // final doubleVal = double.tryParse(value);
 
-                        if (doubleVal != null) {
-                          StorageUtils.instance
-                              .setDouble(key: id, val: doubleVal);
+                        // if (doubleVal != null) {
+                        //   StorageUtils.instance
+                        //       .setDouble(key: id, val: doubleVal);
+                        // }
+
+                        if (value?.isNotEmpty == true) {
+                          final doubleVal = double.tryParse(value);
+
+                          if (doubleVal != null && doubleVal.isNaN == false) {
+                            StorageUtils.instance
+                                .setDouble(key: id, val: doubleVal);
+                          }
                         }
                       },
                     );
@@ -505,11 +520,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         tag: id2,
                         milliseconds: 500,
                         callback: () {
-                          final doubleVal = double.tryParse(value);
+                          if(value?.isNotEmpty == true) {
+                            final doubleVal = double.tryParse(value);
 
-                          if (!doubleVal.isNaN && doubleVal != null) {
-                            StorageUtils.instance
-                                .setDouble(key: id2, val: doubleVal);
+                            if (doubleVal != null && doubleVal.isNaN == false) {
+                              StorageUtils.instance
+                                  .setDouble(key: id2, val: doubleVal);
+                            }
                           }
                         },
                       );

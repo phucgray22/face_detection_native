@@ -14,7 +14,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 
 class FaceContourDetectionProcessor(
-    private val _onDetected: (List<Face>, ImageProxy) -> Unit,
+    private val _onDetected: (List<Face>) -> Unit,
 ) : BaseImageAnalyzer<List<Face>>() {
     private val realTimeOpts = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -41,10 +41,9 @@ class FaceContourDetectionProcessor(
     override fun onSuccess(
         results: List<Face>,
         rect: Rect,
-        imageProxy: ImageProxy
     ) {
 
-        _onDetected(results, imageProxy)
+        _onDetected(results)
     }
 
     override fun onFailure(e: Exception) {
