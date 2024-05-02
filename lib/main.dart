@@ -220,21 +220,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ],
                   ),
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     const SizedBox(width: 30),
-                  //     ElevatedButton(
-                  //       onPressed: resetAll,
-                  //       child: const Text('Resel all'),
-                  //     ),
-                  //     // const SizedBox(width: 30),
-                  //     // ElevatedButton(
-                  //     //   onPressed: newID,
-                  //     //   child: const Text('Create new ID'),
-                  //     // ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
@@ -302,42 +287,28 @@ class _MyHomePageState extends State<MyHomePage> {
     };
   }
 
+  dynamic getStorageValue(String key, dynamic defaultValue) {
+    return StorageUtils.instance.getDouble(key: key) ?? defaultValue;
+  }
+
   void loadOptions() async {
-    final smilling = StorageUtils.instance.getDouble(key: 'smilling') ?? 0.8;
-    final closeEye = StorageUtils.instance.getDouble(key: 'closeEye') ?? 0.1;
-    final openEye = StorageUtils.instance.getDouble(key: 'openEye') ?? 0.9;
-    final turnLeft = StorageUtils.instance.getDouble(key: 'turnLeft') ?? (isIOS ? -20 : 30);
-    final turnRight = StorageUtils.instance.getDouble(key: 'turnRight') ?? (isIOS ? 40 : -40);
-    final lookUp = StorageUtils.instance.getDouble(key: 'lookUp') ?? 30;
-    final lookDown = StorageUtils.instance.getDouble(key: 'lookDown') ?? -15;
-
-    final fromSize = StorageUtils.instance.getDouble(key: 'fromSize') 
-         ?? (isIOS ? 250 : 250);
-    final toSize = StorageUtils.instance.getDouble(key: 'toSize') 
-        ?? (isIOS ? 290 : 350);
-
-    final fromTop = 
-      StorageUtils.instance.getDouble(key: 'fromTop') 
-        ?? (isIOS ? 0 : 140);
-    final toTop = StorageUtils.instance.getDouble(key: 'toTop') 
-        ?? (isIOS ? 150 : 250);
-
-    final fromLeft = StorageUtils.instance.getDouble(key: 'fromLeft') 
-        ?? (isIOS ? 10 : 0);
-    final toLeft = StorageUtils.instance.getDouble(key: 'toLeft') 
-        ?? (isIOS ? 80 : 130);
-
-    final fromStraight = StorageUtils.instance.getDouble(key: 'fromStraight') 
-      ?? (isIOS ? 210 : -20);
-    final toStraight = StorageUtils.instance.getDouble(key: 'toStraight') 
-      ?? (isIOS ? 290 : 20);
-
-    final fromMid =
-        StorageUtils.instance.getDouble(key: 'fromMid') 
-          ?? (isIOS ? -12 : 280);
-    final toMid =
-        StorageUtils.instance.getDouble(key: 'toMid') 
-          ?? (isIOS ? 12 : 315);
+    final smilling = getStorageValue('smilling', 0.8);
+    final closeEye = getStorageValue('closeEye', 0.1);
+    final openEye = getStorageValue('openEye', 0.9);
+    final turnLeft = getStorageValue('turnLeft', isIOS ? -20 : 30);
+    final turnRight = getStorageValue('turnRight', isIOS ? 40 : -40);
+    final lookUp = getStorageValue('lookUp', 30);
+    final lookDown = getStorageValue('lookDown', -15);
+    final fromSize = getStorageValue('fromSize', isIOS ? 250 : 250);
+    final toSize = getStorageValue('toSize', isIOS ? 290 : 360);
+    final fromTop = getStorageValue('fromTop', isIOS ? 0 : 130);
+    final toTop = getStorageValue('toTop', isIOS ? 150 : 250);
+    final fromLeft = getStorageValue('fromLeft', isIOS ? 10 : 0);
+    final toLeft = getStorageValue('toLeft', isIOS ? 80 : 130);
+    final fromStraight = getStorageValue('fromStraight', isIOS ? 210 : -20);
+    final toStraight = getStorageValue('toStraight', isIOS ? 290 : 20);
+    final fromMid = getStorageValue('fromMid', isIOS ? -12 : 280);
+    final toMid = getStorageValue('toMid', isIOS ? 12 : 350);
 
     smillingController.text = '$smilling';
     closeEyeController.text = '$closeEye';
@@ -378,13 +349,15 @@ class _MyHomePageState extends State<MyHomePage> {
               controller: turnLeftController,
               controller2: turnRightController,
               id: 'turnLeft',
-              id2: 'turnRight')
+              id2: 'turnRight',
+            )
           : _buildInput(
               title: 'Turn left/right\n(headEulerAngleY)',
               controller2: turnLeftController,
               controller: turnRightController,
               id2: 'turnLeft',
-              id: 'turnRight'),
+              id: 'turnRight',
+            ),
       _buildInput(
         title: 'Look straight B\n${isIOS ? '(frame.midX)' : 'exactCenterY'}',
         controller: fromMidController,
@@ -473,7 +446,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     CommaFormatter(),
                     FilteringTextInputFormatter.allow(
                       RegExp(
-                        // r'^[0-9]*[.]?[0-9]*',
                         r'^-?[0-9]*[.]?[0-9]*'
                       ),
                     ),
@@ -483,13 +455,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       tag: id,
                       milliseconds: 500,
                       callback: () {
-                        // final doubleVal = double.tryParse(value);
-
-                        // if (doubleVal != null) {
-                        //   StorageUtils.instance
-                        //       .setDouble(key: id, val: doubleVal);
-                        // }
-
                         if (value?.isNotEmpty == true) {
                           final doubleVal = double.tryParse(value);
 
@@ -575,18 +540,16 @@ const stepsPredict = [
   // Step('turnRight', 'Quay mặt sang phải')
 ];
 
-// -15 <  30 >
-
 class CommaFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    String _text = newValue.text;
+    String text = newValue.text;
 
     return newValue.copyWith(
-      text: _text.replaceAll(',', '.'),
+      text: text.replaceAll(',', '.'),
     );
   }
 }

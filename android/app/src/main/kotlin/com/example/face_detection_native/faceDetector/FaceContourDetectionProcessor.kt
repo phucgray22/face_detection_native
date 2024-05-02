@@ -1,17 +1,14 @@
 package com.example.face_detection_native.faceDetector
 
-import android.graphics.Bitmap
 import android.graphics.Rect
-import android.media.Image
+
 import android.util.Log
-import androidx.camera.core.ImageProxy
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.io.IOException
-import java.nio.ByteBuffer
 
 class FaceContourDetectionProcessor(
     private val _onDetected: (List<Face>) -> Unit,
@@ -42,7 +39,6 @@ class FaceContourDetectionProcessor(
         results: List<Face>,
         rect: Rect,
     ) {
-
         _onDetected(results)
     }
 

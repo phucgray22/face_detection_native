@@ -10,9 +10,6 @@ import com.google.mlkit.vision.common.InputImage
 
 
 abstract class BaseImageAnalyzer<T> : ImageAnalysis.Analyzer {
-
-//    abstract val graphicOverlay: GraphicOverlay
-
     @SuppressLint("UnsafeExperimentalUsageError", "UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
@@ -20,7 +17,6 @@ abstract class BaseImageAnalyzer<T> : ImageAnalysis.Analyzer {
         mediaImage?.let {
             detectInImage(InputImage.fromMediaImage(it, imageProxy.imageInfo.rotationDegrees))
                 .addOnSuccessListener { results ->
-
                     onSuccess(
                         results,
                         it.cropRect,

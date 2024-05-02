@@ -3,7 +3,6 @@ package com.example.face_detection_native
 import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Base64
-import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import androidx.annotation.NonNull
 import com.example.face_detection_native.faceDetector.DemoActivity
@@ -28,11 +27,7 @@ class MainActivity: FlutterActivity() {
 
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
                     call, result ->
-
-
                 if(call.method == "openCamera") {
-
-
                     val args = call.arguments as Map<*, *>?
                     val steps = (args?.get("steps") as List<Map<String, String>>)
                         .map { StepData(it["id"] ?: "", it["description"] ?: "") }
@@ -42,16 +37,11 @@ class MainActivity: FlutterActivity() {
 
                     val function = args?.get("function") as String
 
-
-
-//                    // Construct the OpenCameraOptions object
                     val options = OpenCameraOptions(steps, detections as HashMap<String, Object>, function)
 
                     val intent = Intent(this, DemoActivity::class.java)
                     intent.putExtra("options", options as Serializable)
                     startActivity(intent)
-
-//                    result.success("Camera opened successfully")
         }
         else {
           result.notImplemented()
@@ -65,7 +55,6 @@ class MainActivity: FlutterActivity() {
 object KotlinContextSingleton {
 
     private var flutterEngine: FlutterEngine? = null
-
 
     fun setFlutterEngine(engine: FlutterEngine) {
         flutterEngine = engine

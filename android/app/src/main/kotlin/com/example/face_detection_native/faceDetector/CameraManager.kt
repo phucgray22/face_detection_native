@@ -39,8 +39,6 @@ class CameraManager(
 
     private var imageAnalyzer: ImageAnalysis? = null
     private var imageCapture: ImageCapture? = null
-    private lateinit var outputDirectory: File
-
 
     init {
         createNewExecutor()
@@ -49,8 +47,6 @@ class CameraManager(
     private fun createNewExecutor() {
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
-
-
 
     fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -68,7 +64,6 @@ class CameraManager(
                     }
 
                 val targetResolution = Size(480, 640)
-//                val targetResolution = Size(240, 320)
 
                 imageCapture = ImageCapture.Builder()
                                 .setTargetResolution(targetResolution)
@@ -86,9 +81,7 @@ class CameraManager(
     }
 
     private fun selectAnalyzer(): ImageAnalysis.Analyzer {
-        return FaceContourDetectionProcessor(
-            _onDetected = onDetected,
-            )
+        return FaceContourDetectionProcessor(_onDetected = onDetected)
     }
 
     private fun setCameraConfig(
@@ -97,6 +90,7 @@ class CameraManager(
     ) {
         try {
             cameraProvider?.unbindAll()
+
             camera = cameraProvider?.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
@@ -104,6 +98,7 @@ class CameraManager(
                 imageAnalyzer,
                 imageCapture
             )
+
             preview?.setSurfaceProvider(
                 finderView.createSurfaceProvider()
             )

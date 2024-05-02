@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
@@ -17,7 +16,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.ImageCapture
 import androidx.core.app.ActivityCompat
@@ -51,16 +49,16 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private var smilingProbability: Double = 0.8
     private var openEyeProbability: Double = 0.9
     private var closeEyeProbability: Double = 0.1
-    private var turnLeftHeadEulerAngleY: Double = -20.0
-    private var turnRightHeadEulerAngleY: Double = 40.0
+    private var turnLeftHeadEulerAngleY: Double = 30.0
+    private var turnRightHeadEulerAngleY: Double = -40.0
     private var lookUpHeadEulerAngleX: Double = 30.0;
     private var lookDownHeadEulerAngleX: Double = -15.0;
-    private var lookStraightRange: ArrayList<Int> = arrayListOf(210, 290)
-    private var faceMidRange: ArrayList<Int> = arrayListOf(-12, 12)
-    private var faceSizeRange: ArrayList<Int> = arrayListOf(250, 290)
-    private var faceTopRange: ArrayList<Int> = arrayListOf(0, 150)
-    private var faceLeftRange: ArrayList<Int> = arrayListOf(10, 80)
-    private var currentFunctionType: Function = Function.training
+    private var lookStraightRange: ArrayList<Int> = arrayListOf(-20, 20)
+    private var faceMidRange: ArrayList<Int> = arrayListOf(280, 350)
+    private var faceSizeRange: ArrayList<Int> = arrayListOf(250, 360)
+    private var faceTopRange: ArrayList<Int> = arrayListOf(130, 250)
+    private var faceLeftRange: ArrayList<Int> = arrayListOf(0, 130)
+    private var currentFunctionType: Function = Function.Training
 
 
     private var currentStepIndex: Int = -1
@@ -83,16 +81,13 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         options = intent.getSerializableExtra("options") as OpenCameraOptions
 
         when(options.function) {
-            "training" -> {
-                currentFunctionType = Function.training
+            FUNCTION_TRAINING -> {
+                currentFunctionType = Function.Training
             }
-            "checkIn" -> {
-                currentFunctionType = Function.checkIn
+            FUNCTION_CHECK_IN -> {
+                currentFunctionType = Function.CheckIn
             }
         }
-
-        horizontalScrollView = findViewById(R.id.hScrollView)
-
 
         setupView()
 
@@ -101,6 +96,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun setupView() {
+        horizontalScrollView = findViewById(R.id.hScrollView)
         changeCameraSize()
         createImagesPlaceHolder()
         toggleCheckInButton(false)
@@ -112,7 +108,6 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
 //        val circleSize = minOf(displayMetrics.widthPixels * 0.95, MAX_CAMERA_SIZE).toInt()
         val circleSize = (displayMetrics.widthPixels * 0.9).toInt()
-
 
         // Update layout params for previewView
         val previewViewParams = previewView.layoutParams
@@ -131,13 +126,13 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         if(on) {
             checkInButton.setBackgroundColor(Color.BLUE)
             checkInButton.isEnabled = true
-            stepText.text = "XONG"
+            stepText.text = DONE
         } else {
             checkInButton.setBackgroundColor(Color.GRAY)
             checkInButton.isEnabled = false
 
             if(finished) {
-                stepText.text = "CHƯA HOÀN THÀNH"
+                stepText.text = NOT_DONE
             }
         }
     }
@@ -158,7 +153,6 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             )
 
             imageView.layoutParams = layoutParams
-
             imageView.tag = options.steps[i].id
             imageView.isVisible = false
 
@@ -166,12 +160,12 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
                 onImagePressed(i)
             }
 
-
             //
             val textView = TextView(this)
             textView.text = step.description
             textView.gravity = Gravity.CENTER
-            textView.visibility = View.GONE
+//            textView.visibility = View.GONE
+            textView.isVisible = false
 
             stepLayout.addView(imageView)
             stepLayout.addView(textView)
@@ -192,7 +186,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun loadDetectionOptions() {
-        var detections = options.detections
+        val detections = options.detections
 
         detections.forEach { (key, value) ->
             when (key) {
@@ -287,7 +281,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun isLookStraight(face: Face): Boolean {
 //        Log.d("debug123", "${face.boundingBox.exactCenterY().toInt()} in [${faceMidRange[0]} .. ${faceMidRange[1]}]")
-        Log.d("debug123", "${face.headEulerAngleX.toInt()} in [${lookStraightRange[0]} .. ${lookStraightRange[1]}]")
+//        Log.d("debug123", "${face.headEulerAngleX.toInt()} in [${lookStraightRange[0]} .. ${lookStraightRange[1]}]")
 
         return (face.boundingBox.exactCenterY().toInt() in faceMidRange[0]..faceMidRange[1]) &&
                 (face.headEulerAngleX.toInt() in lookStraightRange[0]..lookStraightRange[1])
@@ -314,6 +308,15 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         return FaceFrameState.TooFar
     }
 
+    private fun updateConfigValue(face: Face) {
+        tsMidX.text = "boundingBox.exactCenterY: ${face.boundingBox.exactCenterY()}"
+        tsHeight.text = "bouncingBox.height: ${face.boundingBox.height()}"
+        tsLeft.text = "bouncingBox.left: ${face.boundingBox.left}"
+        tsTop.text = "bouncingBox.top: ${face.boundingBox.top}"
+        tsHeadEulerAngleX.text = "headEulerAngleX: ${face.headEulerAngleX}"
+        tsHeadEulerAngleY.text = "headEulerAngleY: ${face.headEulerAngleY}"
+    }
+
     private fun detectTraining(faces: List<Face>) {
         if(faces.isEmpty() || currentStepIndex >= options.steps.count()) {
             changeCircleColor(Color.TRANSPARENT)
@@ -328,12 +331,8 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
         val face = faces.first()
 
-        tsMidX.text = "boundingBox.exactCenterY: ${face.boundingBox.exactCenterY()}"
-        tsHeight.text = "bouncingBox.height: ${face.boundingBox.height()}"
-        tsLeft.text = "bouncingBox.left: ${face.boundingBox.left}"
-        tsTop.text = "bouncingBox.top: ${face.boundingBox.top}"
-        tsHeadEulerAngleX.text = "headEulerAngleX: ${face.headEulerAngleX}"
-        tsHeadEulerAngleY.text = "headEulerAngleY: ${face.headEulerAngleY}"
+        updateConfigValue(face)
+
 
         when (getFaceFrameState(face)) {
             FaceFrameState.InFrame -> {
@@ -383,6 +382,10 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     private fun detectCheckIn(faces: List<Face>) {
         var hasFace = false
 
+        if(faces.isNotEmpty()) {
+            updateConfigValue(faces.first())
+        }
+
         for(face in faces) {
             when (getFaceFrameState(face)) {
                 FaceFrameState.InFrame -> {
@@ -422,10 +425,10 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun onDetected(faces: List<Face>) {
         when(currentFunctionType) {
-            Function.training -> {
+            Function.Training -> {
                 detectTraining(faces)
             }
-            Function.checkIn -> {
+            Function.CheckIn -> {
                 detectCheckIn(faces)
             }
         }
@@ -440,27 +443,27 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 //        Log.d("debug123", "${face.headEulerAngleY} >= ${turnLeftHeadEulerAngleY}")
 
         val isMatched = when(stepID) {
-            "turnLeft" -> {
+            STEP_ID_TURN_LEFT -> {
                 face.headEulerAngleY >= turnLeftHeadEulerAngleY
             }
 
-            "turnRight" -> {
+            STEP_ID_TURN_RIGHT -> {
                 face.headEulerAngleY <= turnRightHeadEulerAngleY
             }
 
-            "lookUp" -> {
+            STEP_ID_LOOK_UP -> {
                 face.headEulerAngleX >= lookUpHeadEulerAngleX
             }
 
-            "lookDown" -> {
+            STEP_ID_LOOK_DOWN -> {
                 face.headEulerAngleX >= lookDownHeadEulerAngleX
             }
 
-            "smile" -> {
+            STEP_ID_SMILE -> {
                 face.smilingProbability != null && face.smilingProbability!! >= smilingProbability
             }
 
-            "closeLeftEye" -> {
+            STEP_ID_LEFT_EYE -> {
                 face.rightEyeOpenProbability != null &&
                 face.rightEyeOpenProbability!! <= closeEyeProbability &&
                 face.leftEyeOpenProbability != null &&
@@ -469,7 +472,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
                 face.headEulerAngleY > turnRightHeadEulerAngleY
             }
 
-            "closeRightEye" -> {
+            STEP_ID_RIGHT_EYE -> {
                 face.leftEyeOpenProbability != null &&
                 face.leftEyeOpenProbability!! <= closeEyeProbability &&
                 face.rightEyeOpenProbability != null &&
@@ -494,8 +497,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun takePhoto(currentIndex: Int, callback: () -> Unit) {
-        var currentBitmap = previewView.bitmap
-//        var currentBitmap = previewView.getDrawingCache(true).copy(Bitmap.Config.ALPHA_8, false)
+        val currentBitmap = previewView.bitmap
 
         val imageView = getImage(currentIndex - 1)
 
@@ -506,16 +508,15 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         if(finished) {
             //
         } else {
+            // Scroll to current image step
             horizontalScrollView.post { horizontalScrollView.fullScroll(View.FOCUS_RIGHT) }
         }
 
-        //
-        var currentStep = options?.steps?.elementAt(currentIndex - 1)
+        val currentStep = options?.steps?.elementAt(currentIndex - 1)
 
+        val imageText = getImageText(currentIndex - 1)
 
-        var imageText = getImageText(currentIndex - 1)
-
-        imageText?.visibility = View.VISIBLE
+        imageText?.isVisible = true
         imageText?.setTextColor(Color.BLUE)
 
         listImages = listImages.plus(currentBitmap!!)
@@ -524,146 +525,7 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             listStepIdSuccess.add(currentStep?.id  )
         }
 
-//        InputImage.fromBitmap(currentBitmap, frame?.imageInfo?.rotationDegrees!!)
-//        InputImage.fromMediaImage(frame.image!!, frame?.imageInfo?.rotationDegrees!!)
-//        val byteBuffer = frame.image!!.planes[0].buffer
-//
-//        val byteArray = ByteArray(byteBuffer.remaining())
-
-//        frame.image.
-//      ctory.decodeByteArray(byteArray, 0, byteArray.size)
-
-        // Step 2: Create Image from Bitmap
-//        val image = ImageDecoder.createSource(bitmap).decodeBitmap()
-//        byteBuffer.get(byteArray)
-//        val bitmap = BitmapFa
-//        val image123 = InputImage.fromByteArray(byteArray, frame.image?.width!!, frame.image?.height!!, frame?.imageInfo?.rotationDegrees!!, InputImage.IMAGE_FORMAT_NV21)
-
-
-
-//        countFace(InputImage.fromMediaImage(frame.image!!,frame?.imageInfo?.rotationDegrees!! )) { faceCount, face ->
-//            var currentStep = options?.steps?.elementAt(currentIndex - 1)
-//
-//            imageText?.visibility = View.VISIBLE
-//
-//            if(faceCount == 1 && isFaceMatchCondition(currentStep.id, face)) {
-//                getImageText(currentIndex - 1)?.setTextColor(Color.BLUE)
-//
-//                if(!listStepIdSuccess.contains(currentStep?.id)) {
-//                    listStepIdSuccess.add(currentStep?.id  )
-//                }
-//
-//                if(listStepIdSuccess?.count() == options?.steps?.count() && finished) {
-//                    toggleCheckInButton(true)
-//                }
-//
-//            } else {
-//                if(listStepIdSuccess.contains(currentStep?.id)) {
-//                    listStepIdSuccess.remove(currentStep?.id)
-//                }
-//
-//                toggleCheckInButton(false)
-//
-//                val snackBar = Snackbar.make(
-//                    findViewById(android.R.id.content), // Pass the root view of your layout
-//                    "Ảnh ${"${currentStep?.description}"} không hợp lê",
-//                    Snackbar.LENGTH_SHORT
-//                )
-//
-//                imageText?.setTextColor(Color.RED)
-//
-//                snackBar.view.setBackgroundColor(Color.rgb(255,102,102))
-//                snackBar.setTextColor(Color.rgb(102,0,0))
-//
-//                snackBar.show()
-//            }
-//
-//
-//        }
-
         callback()
-
-//        val imageCapture = _imageCapture ?: return
-//
-//        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
-//            override fun onCaptureSuccess(image: ImageProxy) {
-//                val buffer = image.planes[0].buffer
-//                val imageData = ByteArray(buffer.remaining())
-//                buffer.get(imageData)
-//
-//                val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-//
-//                val imageView = getImage(currentIndex - 1)
-//
-//                imageView?.setImageBitmap(bitmap)
-//
-//                imageView?.isVisible = true
-//
-//                if(finished) {
-//                    //
-//                } else {
-//                    horizontalScrollView.post { horizontalScrollView.fullScroll(View.FOCUS_RIGHT) }
-//                }
-//
-//
-//                countFace(InputImage.fromBitmap(bitmap, image.imageInfo.rotationDegrees)) { faceCount, face ->
-//                    var currentStep = options?.steps?.elementAt(currentIndex - 1)
-//
-//                    var imageText = getImageText(currentStepIndex - 1)
-//
-//                    imageText?.visibility = View.VISIBLE
-//
-//                    if(faceCount == 1 && isFaceMatchCondition(currentStep.id, face)) {
-//                        getImageText(currentIndex - 1)?.setTextColor(Color.BLUE)
-//                        listImages = listImages.plus(bitmap)
-//
-//                        if(!listStepIdSuccess.contains(currentStep?.id)) {
-//                            listStepIdSuccess.add(currentStep?.id  )
-//                        }
-//
-//                        if(listStepIdSuccess?.count() == options?.steps?.count() && finished) {
-//                            toggleCheckInButton(true)
-//                        }
-//
-//                    } else {
-//                        if(listStepIdSuccess.contains(currentStep?.id)) {
-//                            listStepIdSuccess.remove(currentStep?.id)
-//                        }
-//
-//                        toggleCheckInButton(false)
-//
-//                        val snackBar = Snackbar.make(
-//                            findViewById(android.R.id.content), // Pass the root view of your layout
-//                            "Ảnh ${"${currentStep?.description}"} không hợp lê",
-//                            Snackbar.LENGTH_SHORT
-//                        )
-//
-//                        getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-//
-////                        if(finished) {
-////                            getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-////                        } else {
-////                            getImageText(options?.steps?.indexOf(currentStep))?.setTextColor(Color.RED)
-////                        }
-//
-//                        snackBar.view.setBackgroundColor(Color.rgb(255,102,102))
-//                        snackBar.setTextColor(Color.rgb(102,0,0))
-//
-//                        snackBar.show()
-//                    }
-//
-//
-//                }
-//
-//                callback()
-//
-//                image.close()
-//            }
-//
-//            override fun onError(exception: ImageCaptureException) {
-//                Log.e("debug123", "Error capturing image: ${exception.message}", exception)
-//            }
-//        })
     }
 
     private fun getImage(index: Int): ImageView? {
@@ -688,21 +550,14 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
             context = this,
             finderView =  previewView,
             lifecycleOwner = this,
-//            graphicOverlay =  graphicOverlay,
             onDetected = ::onDetected,
             setImageCapture = ::setImageCapture,
-//            getFrame = ::getFrame
         )
-
-//        cameraManager.preview.setPreviewCallback(imageView)
-//        cameraManager.
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
-
-
 
     private val detector = FaceDetection.getClient(FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -772,12 +627,26 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
         private const val DETECTION_KEY_FACE_TOP = "faceTopRange"
         private const val DETECTION_KEY_FACE_LEFT = "faceLeftRange"
 
+        private const val STEP_ID_TURN_LEFT = "turnLeft"
+        private const val STEP_ID_TURN_RIGHT = "turnRight"
+        private const val STEP_ID_LOOK_UP = "lookUp"
+        private const val STEP_ID_LOOK_DOWN = "lookDown"
+        private const val STEP_ID_SMILE = "smile"
+        private const val STEP_ID_LEFT_EYE = "closeLeftEye"
+        private const val STEP_ID_RIGHT_EYE = "closeRightEye"
+
         //
 
         private const val SO_MANY_PEOPLE = "Quá nhiều người"
         private const val PLEASE_LOOK_STRAIGHT = "Vui lòng nhìn thẳng"
         private const val TOO_CLOSE = "Mặt quá gần"
         private const val TOO_FAR = "Di chuyển mặt vào gần camera"
+        private const val DONE = "Xong"
+        private const val NOT_DONE = "Chưa hoàn thành"
+
+        //
+        private const val FUNCTION_TRAINING = "training"
+        private const val FUNCTION_CHECK_IN = "checkIn"
     }
 
     enum class FaceFrameState {
@@ -787,8 +656,8 @@ class DemoActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     enum class Function {
-        training,
-        checkIn
+        Training,
+        CheckIn
     }
 
 
