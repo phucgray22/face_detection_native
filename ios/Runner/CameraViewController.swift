@@ -74,7 +74,7 @@ class CameraViewController: UIViewController {
         return annotationOverlayView
     }()
     
-    private lazy var  : UIImageView = {
+    private lazy var previewOverlayView : UIImageView = {
         precondition(isViewLoaded)
         let previewOverlayView = UIImageView(frame: .zero)
         previewOverlayView.contentMode = UIView.ContentMode.scaleAspectFill
